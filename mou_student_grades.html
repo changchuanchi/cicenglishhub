@@ -83,7 +83,11 @@
       overflow: hidden;
     }
 
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 260px);
+      min-height: 260px;
+    }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 
@@ -94,6 +98,9 @@
       font-weight: 500;
       text-align: center;
       white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 3;
     }
     thead th.th-name { text-align: left; padding-left: 18px; min-width: 80px; }
     thead th.th-id { min-width: 95px; }
@@ -196,6 +203,7 @@
       .controls { flex-direction: column; align-items: flex-start; }
       .search-box { max-width: none; width: 100%; }
       .header h1 { font-size: 1.05rem; }
+      .table-wrap { max-height: calc(100vh - 330px); }
     }
 
     /* Password gate */
