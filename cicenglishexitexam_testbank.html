@@ -706,18 +706,34 @@ function renderListPager(total, from, to) {
 }
 
 // 量測頂部固定區高度，讓搜尋列剛好黏在它下方
-function syncStickyTop() {
+function syncStickyTop(retriesLeft) {
   const bar = document.getElementById('stickyTop');
-  if (bar) document.documentElement.style.setProperty('--tabbar-h', bar.getBoundingClientRect().height + 'px');
+  if (!bar) return;
+  const h = bar.getBoundingClientRect().height;
+  // 版面还在退化状态（视窗尚未有尺寸、元素还没算绘）时量到的值不可信，
+  // 写进去会让搜寻列黏在离谱的位置。但也不能就这样放着不写 ——
+  // 没写值就会退回 CSS fallback，一样会盖住内容，所以排下一帧再试。
+  if (!h || !window.innerHeight) {
+    const n = (typeof retriesLeft === 'number') ? retriesLeft : 30;
+    if (n > 0) requestAnimationFrame(function () { syncStickyTop(n - 1); });
+    return;
+  }
+  document.documentElement.style.setProperty('--tabbar-h', h + 'px');
 }
 (function watchStickyTop() {
   const bar = document.getElementById('stickyTop');
   if (!bar) return;
-  // 用 ResizeObserver：换行、字级变化、LOGO 载入完成都会即时重算，
-  // 只听 resize 事件会量到旧高度而在两列之间留下空隙
-  if (window.ResizeObserver) new ResizeObserver(syncStickyTop).observe(bar);
-  else window.addEventListener('resize', syncStickyTop);
+  // ResizeObserver 抓内容造成的高度变化（换行、字级、LOGO 载入）；
+  // resize 事件抓视窗尺寸变化。两者要并用 —— 只留其一都会有漏网的情境。
+  // 参照要留着：ResizeObserver 若无人持有可能被 GC 回收，观察就默默失效了
+  if (window.ResizeObserver) {
+    window.__stickyRO = new ResizeObserver(function () { syncStickyTop(); });
+    window.__stickyRO.observe(bar);
+  }
+  window.addEventListener('resize', syncStickyTop);
+  window.addEventListener('pageshow', syncStickyTop);   // 上一页返回（bfcache）
   window.addEventListener('load', syncStickyTop);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncStickyTop);
   syncStickyTop();
 })();
 
